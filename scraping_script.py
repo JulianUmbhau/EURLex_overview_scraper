@@ -8,6 +8,8 @@ Created on Tue Feb  2 23:17:01 2021
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from bs4 import BeautifulSoup
+import pandas as pd
 
 #browser = webdriver.Firefox()
 
@@ -30,18 +32,35 @@ driver.get("https://eur-lex.europa.eu/search.html?"+ code +"&SUBDOM_INIT=ALL_ALL
 
 driver.find_element_by_class_name("SearchResult").find_element_by_class_name("title")
 driver.find_element_by_xpath("//div[@class='SearchResult']").find_element_by_xpath(".//a[@class='title']").text
-for element in driver.find_element_by_xpath("//div[@class='SearchResult']").find_element_by_xpath(".//a[@class='title']"):
-    
 
-for element in driver.find_elements_by_xpath("//div[@class='SearchResult']"):
+
+
+# går igennem dokument en for en
+for element in driver.find_elements_by_xpath("//div[@class='SearchResult']"): 
     print(element.text)
+    name = element.text
+    element.click()
+    driver.find_element_by_link_text("Document information").click()
+    document_date = driver.find_elements_by_class_name("NMetadata").find_element_by_xpath("./dt['Date of document']/following-sibling::dd").text
+    
+    # går igennem metadata og extracter
+    for desc_list in driver.find_elements_by_class_name("NMetadata"):
+        print(desc_list.text)
+        test = desc_list
+        #print(desc_list.find_element_by_xpath("./dt['Date of document']/following-sibling::dd").text)
+    
     break
-for element in driver.find_elements_by_xpath("//div")
-
-//*[@id="SearchCriteriaPanel"]/div/div/span[5]
 
 
-//*[@id="MainContent"]/div[2]/div[2]/div/div[5]
+# kan beautifulsoup bruges?
+import requests
+response = requests.get("https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32020R2222&qid=1612306865594")
+page = response.text
+soup = BeautifulSoup(page, "html.parser")
+print(soup.prettify())
+
+# TODO hente metadata robust
+# TODO gemme data i fil - csv
 # TODO Se noter
 # https://www.youtube.com/watch?v=ztbFY_kL4jI
 # https://selenium-python.readthedocs.io/navigating.html
