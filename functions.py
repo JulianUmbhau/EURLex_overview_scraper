@@ -10,6 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 import time
 import pandas as pd
+import numpy as np
 import data
 
 
@@ -18,17 +19,17 @@ def scrape_links(search_term, driver_path, chrome_options):
     
     dc_codes = data.dc_codes
 
-    delay = 5
+    delay = 10
     dc_code = str(dc_codes[search_term])
     driver.get("https://eur-lex.europa.eu/search.html?DC_CODED="+ dc_code +"&SUBDOM_INIT=ALL_ALL&DTS_SUBDOM=ALL_ALL&DTS_DOM=ALL&lang=en&type=advanced&qid=1612306865594")
     try:
         element = WebDriverWait(driver,delay).until(EC.element_to_be_clickable((By.CLASS_NAME,"wt-cck-btn-add"))).click()
     except:
-        print("ok")
+        print("Couldnt find")
     
     i=0
     
-    # går igennem dokument en for en
+    # går igennem sider en for en
     df = pd.DataFrame(columns=("search_term", "title","link"))
                 
     while True:
@@ -59,12 +60,16 @@ def scrape_links(search_term, driver_path, chrome_options):
     return(df)
 
 
-def scrape_document_information(df, driver_path, chrome_options):
+def scrape_document_information(df, link_list_full_path, driver_path, chrome_options):
     driver = webdriver.Chrome(driver_path, options=chrome_options)
     
+    start_idx = df.dates.last_valid_index()
     delay = 1
-    idx = 0
-    for link in df.link:
+    if start_idx is None:
+        idx = 0
+    else:
+        idx = start_idx
+    for link in df.link[idx:]:
         doc_code = link.split("=")[1]
         
         link_full = "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=" + str(doc_code) + "&qid=1612306865594"
@@ -83,12 +88,45 @@ def scrape_document_information(df, driver_path, chrome_options):
             pass
         try:
             dates = driver.find_element_by_id("PPDates_Contents").text
+            categories = driver.find_element_by_id("PPClass_Contents").text
+            try:
+                linked_docs = driver.find_element_by_id("PPLinked_Contents").text
+            except:
+                linked_docs = "Not found"
         except:
             print("refreshing")
             driver.refresh()
-            time.sleep(5)
-            dates = driver.find_element_by_id("PPDates_Contents").text
+            time.sleep(10)
+            try:
+                dates = driver.find_element_by_id("PPDates_Contents").text
+            except:
+                dates = "Dates non_existent"
         df["dates"].loc[idx] = dates
+        df["categories"].loc[idx] = categories
+        df["linked_docs"].loc[idx] = linked_docs
+        
+        if (idx % 100) == 0:
+            print("Saving data")
+            df.to_csv(link_list_full_path)
         idx += 1
     driver.close()
+    return(df)
+
+
+def date_separation(df):
+    df["doc_date"] = np.nan
+    df["doc_end_date"] = np.nan
+    for term in range(0, df.dates.last_valid_index()+1):
+        if "Date of document" in df.dates.loc[term]:
+            temp = df.dates[term].replace(":",";").split("\n")
+            if "Date" in temp[1]:
+                temp[1] = temp[1].split(";")[0]
+            df.doc_date[term] = temp[1]
+        if "Date of end of validity" in df.dates.loc[term]:
+            if "No end date" in temp[-1]:
+                df.doc_end_date[term] = "No end date"
+            else:
+                df.doc_end_date[term] = "".join(temp[-2:]).replace("\n","")
+        else:
+            pass
     return(df)
