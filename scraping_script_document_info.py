@@ -10,19 +10,28 @@ import pandas as pd
 import numpy as np
 import functions
 
-chrome_options = Options()
-#chrome_options.add_argument('--headless')
-#chrome_options.add_argument('--no-sandbox')
-#chrome_options.add_argument("start-maximized")
-#chrome_options.add_argument('--disable-dev-shm-usage')
-#chrome_options.add_argument("--remote-debugging-port=9222")
+
+
+new_data = True
+headless = None
+OS = "ubuntu"
+chrome_options = Options() 
 driver_path = "./chromedriver3.exe"
+
+if OS == "ubuntu":
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument("start-maximized")
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    chrome_options.add_argument("--remote-debugging-port=9222")
+    driver_path = '/usr/bin/chromedriver'
+if headless:
+    chrome_options.add_argument('--headless')
+
 link_list_path = "./link_list.csv"
 link_list_full_path = "./link_list_full.csv"
 
 df = pd.read_csv(link_list_path, index_col=0)
 
-new_data = True
 if new_data:
     df["dates"] = np.nan # only if data is new
     df["categories"] = np.nan # only if data is new
@@ -30,12 +39,44 @@ if new_data:
 
 df = functions.scrape_document_information(df, link_list_full_path, driver_path, chrome_options)
 
-df.to_csv(link_list_full_path)
-
-
-df = pd.read_csv(link_list_full_path, index_col=(0))
+#df.to_csv(link_list_full_path)
+#df = pd.read_csv(link_list_full_path, index_col=(0))
 
 
 df = functions.date_separation(df)
+
+
+
+### cateogry separation
+df["EUROVOC"] = np.nan
+for idx in range(0, df.categories.last_valid_index()+1):
+    EUROVOC_temp = df.categories.iloc[idx].replace("\n", " ").split(" ")
+    EUROVOC_descriptors = ", ".join(EUROVOC_temp[2:EUROVOC_temp.index("Subject")])
+    df.at[idx, "EUROVOC"] = EUROVOC_descriptors
+
+# using re module
+import re
+re.search("descriptor:(.*)Subject", df.categories.iloc[0].replace("\n"," ")).group(1)
+
+
+
+
+### document links separation
+df["links_to"] = np.nan
+df["links_from"] = np.nan
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 df.to_csv(link_list_full_path)
