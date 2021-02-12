@@ -101,10 +101,9 @@ def scrape_document_information(df, link_list_full_path, driver_path, chrome_opt
                 dates = driver.find_element_by_id("PPDates_Contents").text
             except:
                 dates = "Dates non_existent"
-        df["dates"].loc[idx] = dates
-        df["categories"].loc[idx] = categories
-        df["linked_docs"].loc[idx] = linked_docs
-        
+        df.at[idx, "dates"] = dates
+        df.at[idx, "categories"] = categories
+        df.at[idx, "linked_docs"] = linked_docs
         if (idx % 100) == 0:
             print("Saving data")
             df.to_csv(link_list_full_path)
@@ -117,16 +116,16 @@ def date_separation(df):
     df["doc_date"] = np.nan
     df["doc_end_date"] = np.nan
     for term in range(0, df.dates.last_valid_index()+1):
-        if "Date of document" in df.dates.loc[term]:
-            temp = df.dates[term].replace(":",";").split("\n")
+        if "Date of document" in df.dates.iloc[term]:
+            temp = df.dates.iloc[term].replace(":",";").split("\n")
             if "Date" in temp[1]:
                 temp[1] = temp[1].split(";")[0]
-            df.doc_date[term] = temp[1]
-        if "Date of end of validity" in df.dates.loc[term]:
+            df.at[term,"doc_date"] = temp[1]
+        if "Date of end of validity" in df.dates.iloc[term]:
             if "No end date" in temp[-1]:
-                df.doc_end_date[term] = "No end date"
+                df.at[term,"doc_end_date"] = "No end date"
             else:
-                df.doc_end_date[term] = "".join(temp[-2:]).replace("\n","")
+                df.at[term,"doc_end_date"] = "".join(temp[-2:]).replace("\n","")
         else:
             pass
     return(df)
