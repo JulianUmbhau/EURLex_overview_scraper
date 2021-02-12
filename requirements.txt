@@ -3,3 +3,5 @@ selenium==3.141.0
 pandas==1.2.1
 
 numpy==1.20.0
+
+nose
