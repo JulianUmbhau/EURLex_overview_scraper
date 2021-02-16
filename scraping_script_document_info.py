@@ -66,13 +66,78 @@ for idx in range(0, df.link.last_valid_index()+1):
     CELEX = df.link.iloc[idx].split(":")[2]
     df.at[idx, "CELEX"] = CELEX
 # %%
-for idx in range(0, df.linked_docs.last_valid_index()+1):
+for idx in range(0, 200+1):
     link = df.linked_docs.iloc[idx]
-    if "Amendment" in link:
-        print(link)
+    if "Amendment" in str(link):
+        print(str(idx), "Amendment")
+    if "Amended" in str(link):
+        print(str(idx), "Amended")
     print("no amendment")
-    break
 
+
+# %%
+
+temp = df.linked_docs.iloc[5].split("\n")
+repeal = temp[temp.index("Repeal 320*")]
+
+# %%
+
+
+
+# giver det mening? - funktion der laver searches baseret på liste af termer 
+def find_link_term(search_term, df):
+    re.findall(str(search_term),df)
+
+
+
+# TODO omdan til re.findall!
+import re
+idx = 5
+repeal = re.findall("Repeal (.*)", df.linked_docs.iloc[idx]).group(1)
+corrected_by = re.search("Corrected by (.*)", df.linked_docs.iloc[5]).group(1)
+
+
+# %%
+temp = df.linked_docs.iloc[8].split("\n")
+corrigendum_to = re.search("Corrigendum to (.*)", df.linked_docs.iloc[8]).group(1)
+
+# %%
+idx = 45
+df.linked_docs.iloc[idx].split("\n")
+implicit_repeal = re.search("Implicit repeal (.*)", df.linked_docs.iloc[45]).group(1)
+
+# %%
+idx = 45
+df.linked_docs.iloc[idx].split("\n")
+completed_by = re.search("Completed by (.*)", df.linked_docs.iloc[idx]).group(1)
+amended_by = re.search("Amended by (.*)", df.linked_docs.iloc[idx]).group(1)
+amended_by = re.findall("Amended by (.*)", df.linked_docs.iloc[idx])
+
+
+# %%
+
+Amendment_to = temp[temp.index("Comment Subdivision concerned")+1:temp.index("Comment Subdivision concerned")+2]
+
+if "Amended" in str(link):
+    Ammended_by = temp[temp.index("")]
+
+
+# %%
+
+
+
+
+# %%
+
+
+
+df.link.iloc[5]
+
+
+
+link = df.linked_docs.iloc[52]
+
+str(link)
 
 
 
