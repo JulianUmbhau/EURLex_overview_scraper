@@ -12,6 +12,8 @@ import time
 import pandas as pd
 import numpy as np
 import data
+import sys
+from selenium.webdriver.chrome.options import Options
 
 
 def scrape_links(search_term, driver_path, chrome_options):
@@ -63,12 +65,8 @@ def scrape_links(search_term, driver_path, chrome_options):
 def scrape_document_information(df, link_list_full_path, driver_path, chrome_options):
     driver = webdriver.Chrome(driver_path, options=chrome_options)
     
-    start_idx = df.dates.last_valid_index()
+    idx = df.index[df.dates == ""][0]  
     delay = 1
-    if start_idx is None:
-        idx = 0
-    else:
-        idx = start_idx
     for link in df.link[idx:]:
         doc_code = link.split("=")[1]
         
@@ -101,9 +99,9 @@ def scrape_document_information(df, link_list_full_path, driver_path, chrome_opt
                 dates = driver.find_element_by_id("PPDates_Contents").text
             except:
                 dates = "Dates non_existent"
-        df.at[idx, "dates"] = dates
-        df.at[idx, "categories"] = categories
-        df.at[idx, "linked_docs"] = linked_docs
+        df.dates.loc[idx] = str(dates)
+        df.categories.loc[idx] = str(categories)
+        df.linked_docs.loc[idx] = str(linked_docs)
         if (idx % 100) == 0:
             print("Saving data")
             df.to_csv(link_list_full_path)
@@ -112,10 +110,30 @@ def scrape_document_information(df, link_list_full_path, driver_path, chrome_opt
     return(df)
 
 
+def set_chrome_options(headless):
+    chrome_options = Options() 
+    if sys.platform in "win32":
+        driver_path = "./chromedriver3.exe"
+    else:
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument("start-maximized")
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument("--remote-debugging-port=9222")
+        driver_path = '/usr/bin/chromedriver'
+    if headless:
+        chrome_options.add_argument('--headless')
+    return(chrome_options, driver_path)
+
+
 def date_separation(df):
-    df["doc_date"] = np.nan
-    df["doc_end_date"] = np.nan
-    for term in range(0, df.dates.last_valid_index()+1):
+    df["doc_date"] = ""
+    df["doc_end_date"] = ""
+    df["doc_date_of_effect"] = ""
+    if df.dates.isna().any():
+        idx_end = df.dates.last_valid_index()+1
+    else:
+        idx_end = df.index[df.dates == ""][0]     
+    for term in range(0, idx_end):
         if "Date of document" in df.dates.iloc[term]:
             temp = df.dates.iloc[term].replace(":",";").split("\n")
             if "Date" in temp[1]:
@@ -128,4 +146,46 @@ def date_separation(df):
                 df.at[term,"doc_end_date"] = "".join(temp[-2:]).replace("\n","")
         else:
             pass
+        if "Date of effect" in df.dates.iloc[term]:
+            df.at[term,"doc_end_date"] = "".join(temp[-2:]).replace("\n","")
+        else:
+            pass
+    return(df)
+
+
+def category_separation(df):
+    df["EUROVOC"] = ""
+    for idx in range(0, df.categories.last_valid_index()+1):
+        EUROVOC_temp = df.categories.iloc[idx].replace("\n", " ").split(" ")
+        if "Subject" in EUROVOC_temp:
+            EUROVOC_descriptors = ", ".join(EUROVOC_temp[2:EUROVOC_temp.index("Subject")])
+        else:
+            EUROVOC_descriptors = ", ".join(EUROVOC_temp[2:])
+        df.at[idx, "EUROVOC"] = EUROVOC_descriptors
+    return(df)
+
+
+def celex_separation(df):
+    df["CELEX"] = ""
+    for idx in range(0, df.link.last_valid_index()+1):
+        CELEX = df.link.iloc[idx].split(":")[2]
+        df.at[idx, "CELEX"] = CELEX
+    return(df)
+
+
+def linked_docs_separation(df):
+    import re
+    linked_docs_categories = ["repeal","corrected_by","corrigendum_to","implicit_repeal","completed_by","amended_by","amendment_to","consolidated", "affected_by"]
+    for column in linked_docs_categories:
+        df[str(column)] = ""
+    for idx in range(0, df.linked_docs.last_valid_index()):
+        df.at[idx, "repeal"] = ",".join(re.findall("Repeal (.*)", df.linked_docs.iloc[idx]))
+        df.at[idx, "corrected_by"] = ",".join(re.findall("Corrected by (.*)", df.linked_docs.iloc[idx]))
+        df.at[idx, "corrigendum_to"] = ",".join(re.findall("Corrigendum to (.*)", df.linked_docs.iloc[idx]))
+        df.at[idx, "implicit_repeal"] = ",".join(re.findall("Implicit repeal (.*)", df.linked_docs.iloc[idx]))
+        df.at[idx, "completed_by"] = ",".join(re.findall("Completed by (.*)", df.linked_docs.iloc[idx]))
+        df.at[idx, "amended_by"] = ",".join(re.findall("Amended by (.*)", df.linked_docs.iloc[idx]))
+        df.at[idx, "amendment_to"] = ",".join(re.findall("Amendment to (.*)", df.linked_docs.iloc[idx]))
+        df.at[idx, "consolidated"] = ",".join(re.findall("Consolidated (.*)", df.linked_docs.iloc[idx]))
+        df.at[idx, "affected_by"] = ",".join(re.findall("Affected by case: (.*) Instruments", df.linked_docs.iloc[idx].replace("\n"," ")))
     return(df)
