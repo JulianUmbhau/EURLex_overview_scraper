@@ -62,10 +62,19 @@ def scrape_links(search_term, driver_path, chrome_options):
     return(df)
 
 
-def scrape_document_information(df, link_list_full_path, driver_path, chrome_options):
+def scrape_document_information(df, link_list_full_path, driver_path, chrome_options, new_data):
     driver = webdriver.Chrome(driver_path, options=chrome_options)
-    
-    idx = df.index[df.dates == ""][0]  
+
+    df_full = pd.read_csv(link_list_full_path,  index_col=0)
+    df = pd.merge(df_full, df, how="outer")
+
+    if new_data:
+        df["dates"] = "" # only if data is new
+        df["categories"] = "" # only if data is new
+        df["linked_docs"] = "" # only if data is new
+        idx = df.index[df.dates == ""][0]  
+
+    idx = df["dates"].last_valid_index()
     delay = 1
     for link in df.link[idx:]:
         doc_code = link.split("=")[1]

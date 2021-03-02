@@ -11,11 +11,11 @@ import numpy as np
 import functions
 
 # %%
-new_data = True
-headless = False
+new_data = False
+headless = True
 
-link_list_path = "./link_list.csv"
-link_list_full_path = "./link_list_full.csv"
+link_list_path = "./link_list_final.csv"
+link_list_full_path = "./link_list_full_final.csv"
 
 # %%
 chrome_options, driver_path = functions.set_chrome_options(headless)
@@ -25,14 +25,12 @@ chrome_options, driver_path = functions.set_chrome_options(headless)
 df = pd.read_csv(link_list_path, index_col=0)
 df = df.reset_index().drop(columns="index")
 
-# %%
-if new_data:
-    df["dates"] = "" # only if data is new
-    df["categories"] = "" # only if data is new
-    df["linked_docs"] = "" # only if data is new
 
 # %%
-df = functions.scrape_document_information(df, link_list_full_path, driver_path, chrome_options)
+df = df.drop_duplicates(subset="link")
+
+# %%
+df = functions.scrape_document_information(df, link_list_full_path, driver_path, chrome_options, new_data)
 # %%
 df.to_csv(link_list_full_path)
 
@@ -48,12 +46,21 @@ df = functions.category_separation(df)
 df = functions.celex_separation(df)
 
 # %%
-
 df = functions.linked_docs_separation(df)
 
-
-
-link_list_full_path_test = "link_list_full_test2.csv"
-df.to_csv(link_list_full_path_test)
-
 # %%
+# import re
+## extract journal type
+# df["CELEX"].duplicated
+# regex = re.compile("^(?P<numbers>\d*)(?P<letters>\w*)$")
+# regex.search(df["CELEX"][0]).groups()
+# for url in df["CELEX"]:
+#     match = re.compile("[^\d]").search(url)
+#     doc_type = url[match.start()]
+#     print(url, doc_type)
+
+
+#%%
+
+link_list_full_path_test = "link_list_full_final2.csv"
+df.to_csv(link_list_full_path_test)
