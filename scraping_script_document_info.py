@@ -23,11 +23,11 @@ chrome_options, driver_path = functions.set_chrome_options(headless)
 # %%
 ### Kig på index!!
 df = pd.read_csv(link_list_path, index_col=0)
-df = df.reset_index().drop(columns="index")
 
 
 # %%
 df = df.drop_duplicates(subset="link")
+df = df.reset_index().drop(columns="index")
 
 # %%
 df = functions.scrape_document_information(df, link_list_full_path, driver_path, chrome_options, new_data)
