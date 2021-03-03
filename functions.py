@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 import data
 import sys
+import re
 from selenium.webdriver.chrome.options import Options
 
 
@@ -81,36 +82,45 @@ def scrape_document_information(df, link_list_full_path, driver_path, chrome_opt
         
         link_full = "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=" + str(doc_code) + "&qid=1612306865594"
         print(str(idx) + " of " + str(len(df)))
-        driver.get(link_full)
         try:
-            driver.find_element_by_xpath("//*[@class='wt-cck-btn-add']").click()
-        except:
-            pass
-        try:
-            driver.find_element_by_xpath("//*[@class='alert alert-info']")
-            print("refreshing")
-            driver.refresh()
-            time.sleep(delay)
-        except:
-            pass
-        try:
-            dates = driver.find_element_by_id("PPDates_Contents").text
-            categories = driver.find_element_by_id("PPClass_Contents").text
+            driver.get(link_full)
             try:
-                linked_docs = driver.find_element_by_id("PPLinked_Contents").text
+                driver.find_element_by_xpath("//*[@class='wt-cck-btn-add']").click()
             except:
-                linked_docs = "Not found"
-        except:
-            print("refreshing")
-            driver.refresh()
-            time.sleep(10)
+                pass
+            try:
+                driver.find_element_by_xpath("//*[@class='alert alert-info']")
+                print("refreshing")
+                driver.refresh()
+                time.sleep(delay)
+            except:
+                pass
             try:
                 dates = driver.find_element_by_id("PPDates_Contents").text
+                categories = driver.find_element_by_id("PPClass_Contents").text
+                try:
+                    linked_docs = driver.find_element_by_id("PPLinked_Contents").text
+                except:
+                    linked_docs = "Not found"
             except:
-                dates = "Dates non_existent"
-        df.dates.loc[idx] = str(dates)
-        df.categories.loc[idx] = str(categories)
-        df.linked_docs.loc[idx] = str(linked_docs)
+                print("refreshing")
+                driver.refresh()
+                time.sleep(10)
+                try:
+                    dates = driver.find_element_by_id("PPDates_Contents").text
+                except:
+                    dates = "Dates non_existent"
+            df.dates.loc[idx] = str(dates)
+            df.categories.loc[idx] = str(categories)
+            df.linked_docs.loc[idx] = str(linked_docs)
+        except:
+            dates = "Not loaded"
+            categories = "Not loaded"
+            linked_docs = "Not loaded"
+
+            df.dates.loc[idx] = str(dates)
+            df.categories.loc[idx] = str(categories)
+            df.linked_docs.loc[idx] = str(linked_docs)
         if (idx % 100) == 0:
             print("Saving data")
             df.to_csv(link_list_full_path)
@@ -197,4 +207,17 @@ def linked_docs_separation(df):
         df.at[idx, "amendment_to"] = ",".join(re.findall("Amendment to (.*)", df.linked_docs.iloc[idx]))
         df.at[idx, "consolidated"] = ",".join(re.findall("Consolidated (.*)", df.linked_docs.iloc[idx]))
         df.at[idx, "affected_by"] = ",".join(re.findall("Affected by case: (.*) Instruments", df.linked_docs.iloc[idx].replace("\n"," ")))
+    return(df)
+
+
+def extract_journal_categories(df):
+    df["journal_category"] = ""
+    for idx in range(0, len(df["CELEX"])):
+        url = df["CELEX"].iloc[idx]
+        match = re.compile("[^\d]").search(url)
+        if match is None:
+            doc_type = "No character"
+        else:
+            doc_type = url[match.start()]
+        df["journal_category"].iloc[idx] = doc_type
     return(df)

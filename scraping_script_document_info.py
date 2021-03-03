@@ -49,17 +49,7 @@ df = functions.celex_separation(df)
 df = functions.linked_docs_separation(df)
 
 # %%
-# import re
-## extract journal type
-# df["CELEX"].duplicated
-# regex = re.compile("^(?P<numbers>\d*)(?P<letters>\w*)$")
-# regex.search(df["CELEX"][0]).groups()
-# for url in df["CELEX"]:
-#     match = re.compile("[^\d]").search(url)
-#     doc_type = url[match.start()]
-#     print(url, doc_type)
-
-
+df = functions.extract_journal_categories(df)
 #%%
 
 link_list_full_path_test = "link_list_full_final2.csv"
