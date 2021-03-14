@@ -150,8 +150,10 @@ def date_separation(df):
     df["doc_date_of_effect"] = ""
     if df.dates.isna().any():
         idx_end = df.dates.last_valid_index()+1
+    elif any(df.dates == ""):
+        idx_end = df.index[df.dates == ""][0]
     else:
-        idx_end = df.index[df.dates == ""][0]     
+        idx_end = len(df.dates)     
     for term in range(0, idx_end):
         if "Date of document" in df.dates.iloc[term]:
             temp = df.dates.iloc[term].replace(":",";").split("\n")
@@ -166,7 +168,7 @@ def date_separation(df):
         else:
             pass
         if "Date of effect" in df.dates.iloc[term]:
-            df.at[term,"doc_end_date"] = "".join(temp[-2:]).replace("\n","")
+            df.at[term,"doc_date_of_effect"] = "".join(temp[-2:]).replace("\n","")
         else:
             pass
     return(df)

@@ -39,6 +39,7 @@ df = pd.read_csv(link_list_full_path, index_col=(0))
 
  # %%
 df = functions.date_separation(df)
+# TODO wrong dates in date of effect
 # %%
 df = functions.category_separation(df)
 
@@ -52,5 +53,34 @@ df = functions.linked_docs_separation(df)
 df = functions.extract_journal_categories(df)
 #%%
 
+
+import re
+import datetime
+
+df["doc_end_date"]
+df["date_end_color"] = ""
+for idx in range(0,len(df)):
+    string = df["doc_end_date"].iloc[idx]
+    present_date = datetime.datetime.today()
+    if "No end date" in string:
+        color = "Green"
+    elif "Date of end of validity" in string and "Not known" not in string:
+        end_date = string.split(";")[1]
+        end_date = datetime.datetime.strptime(end_date, '%d/%m/%Y')
+        if end_date < present_date:
+            color = "Red"
+        else:
+            color = "Yellow"
+    else:
+        color = "None"
+    df["date_end_color"].iloc[idx] = color
+
+        
+
+
 link_list_full_path_test = "link_list_full_final2.csv"
 df.to_csv(link_list_full_path_test)
+
+# TODO 3 fejlregistrerede dokumenter - løs til næste scrape/dokument behandling!
+# %%
+
